@@ -14,17 +14,13 @@ Inputs:
     roles - intended application environment (ex. staging/production). used for capistrano ec2 tag deployment
     project - intended application environment (ex. staging/production). used for capistrano ec2 tag deployment
 
-
-
   Optional:
-    node_type - type of node to use. defaults to cache.m1.small
-    port - port to run on.  defaults to 11211
-    count - number of nodes in the cluster.  defaults to 1
+    count - number of nodes in the cluster, defaults to 1
+    instance_type - type of nodes in the cluster, defaults to m3.medium
 
 Outputs:
-  url - url for the Memcached cluster
-  port - port the Memcached cluster is configured on
-  security_group_id - security group assigned to the cluster
+  elb_hostname - url for the Memcached cluster
+  node_security_group_id - security group assigned to the nodes behind the load balancer
 
 **************************************************************************/
 
@@ -91,7 +87,7 @@ resource "aws_security_group" "node_web_traffic" {
 
 
 resource "aws_elb" "elb" {
-  name = "${var.project}-${var.environment}"
+  name = "${var.name}-${var.environment}"
   subnets = ["${var.subnet_id}"]
   count = 1
 
@@ -138,63 +134,3 @@ output "elb_hostname" {
 output "node_security_group_id" {
   value = "${module.instance.instance_security_group_id}"
 }
-
-
-/*
-resource "aws_security_group" "ssh_traffic" {
-  name = "${var.name}-${var.environment}-ssh-traffic"
-  vpc_id = "${var.vpc_id}"
-  description = "Allow all inbound traffic to port 22"
-  ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_security_group" "node_traffic" {
-  name = "${var.node_security_group}"
-  vpc_id = "${var.vpc_id}"
-
-  ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
-    security_groups = ["${aws_security_group.web_traffic.id}"]
-  }
-  egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-}
-
-resource "aws_instance" "web" {
-  ami = "${var.ami}"
-  instance_type = "${var.instance_type}"
-  key_name = "${var.ssh_key}"
-  subnet_id = "${var.subnet_id}"
-  count = "${var.count}"
-
-  vpc_security_group_ids = [
-    "${aws_security_group.ssh_traffic.id}",
-    "${aws_security_group.node_traffic.id}"
-  ]
-
-  tags {
-    Name = "${var.name} Web ${count.index+1} ${var.environment}"
-    Project = "${var.project}"
-    Roles = "${var.roles}"
-    Stage = "${var.environment}"
-  }
-}
-*/
