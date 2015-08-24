@@ -15,7 +15,8 @@ Inputs:
     project - intended application environment (ex. staging/production). used for capistrano ec2 tag deployment
 
   Optional:
-    count - number of nodes in the cluster, defaults to 1
+    instance_count - number of nodes in the cluster, defaults to 1
+    elb_count - number of load balancers in the cluster, defaults to 1
     instance_type - type of nodes in the cluster, defaults to m3.medium
 
 Outputs:
@@ -41,7 +42,11 @@ variable "instance_type" {
   default = "m3.medium"
 }
 
-variable "count" {
+variable "instance_count" {
+  default = "1"
+}
+
+variable "elb_count" {
   default = "1"
 }
 
@@ -89,7 +94,7 @@ resource "aws_security_group" "node_web_traffic" {
 resource "aws_elb" "elb" {
   name = "${var.name}-${var.environment}"
   subnets = ["${var.subnet_id}"]
-  count = 1
+  count = "${var.elb_count}"
 
   listener {
     instance_port = 80
@@ -122,6 +127,7 @@ module "instance" {
   roles = "${var.roles}"
   project = "${var.project}"
   additional_security_group_ids = "${aws_security_group.node_web_traffic.id}"
+  count = "${var.instance_count}"
 }
 
 
